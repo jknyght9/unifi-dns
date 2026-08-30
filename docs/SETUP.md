@@ -94,3 +94,38 @@ neither, it is worth an issue.
 **DNS briefly stops resolving during a bulk import.** Expected. The gateway
 reloads dnsmasq on every record write, costing one to two seconds each. Bulk
 operations warn before running and estimate the duration.
+
+
+## Importing from another resolver
+
+**Migrate > Import from resolver.** Three sources, all previewed before anything
+is written.
+
+**Pi-hole.** v6 uses the web password, v5 uses an API token from
+*Settings > API*. Both are tried, so supply whichever you have.
+
+**Technitium.** Needs the server address including its port (`:5380` by
+default) and either an API token from *Administration > API Tokens*, or a
+username and password to sign in with. Every user-created zone is read.
+Technitium's built-in reverse and localhost zones are skipped, along with
+disabled records.
+
+**Paste files.** Accepts Pi-hole's `custom.list` and CNAME config, and any
+RFC 1035 zone file. The zone-file box takes a Technitium export
+(*Zones > Export*), a BIND or PowerDNS zone, or anything else in the standard
+format. Set an origin only if the file has no `$ORIGIN` line.
+
+This path is the fallback worth remembering: it works when the source server is
+already off, when its credentials are gone, and for resolvers with no direct
+support.
+
+### What does not come across
+
+UniFi stores A, AAAA, CNAME, MX, TXT and SRV. Anything else in the source
+(SOA, NS, PTR, CAA, DNSKEY, RRSIG) is listed as skipped with the reason, rather
+than dropped silently. Records disabled on the source server are skipped too.
+
+The preview sorts everything into **New**, **Already present**, **Conflicting**
+(same name and type, different value, so importing adds a second answer rather
+than replacing) and **Shadowed** (a client device already publishes that name).
+Only New is selected by default.

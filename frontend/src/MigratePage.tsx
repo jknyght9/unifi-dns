@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
 import type { MigrateItem, MigratePreview, RenameItem, RenamePreview } from "./types";
 
-type Mode = "pihole" | "text";
+type Mode = "pihole" | "technitium" | "text";
 type Tab = "import" | "rename";
 
 /** Buckets the preview sorts records into, and whether they are safe to import. */
@@ -49,8 +49,14 @@ function ImportPanel() {
   const [url, setUrl] = useState("http://pi.hole");
   const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
+  const [tUrl, setTUrl] = useState("http://dns.example.internal:5380");
+  const [tToken, setTToken] = useState("");
+  const [tUser, setTUser] = useState("");
+  const [tPass, setTPass] = useState("");
   const [hostsText, setHostsText] = useState("");
   const [cnameText, setCnameText] = useState("");
+  const [zoneText, setZoneText] = useState("");
+  const [zoneOrigin, setZoneOrigin] = useState("");
   const [ttl, setTtl] = useState(300);
   const [preview, setPreview] = useState<MigratePreview | null>(null);
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -63,9 +69,14 @@ function ImportPanel() {
     mutationFn: () =>
       api.migratePreview({
         ttl,
-        source: mode === "pihole"
-          ? { mode, url, password: password || null, token: token || null }
-          : { mode, hosts_text: hostsText, cname_text: cnameText },
+        source:
+          mode === "pihole"
+            ? { mode, url, password: password || null, token: token || null }
+            : mode === "technitium"
+            ? { mode, url: tUrl, token: tToken || null,
+                username: tUser || null, password: tPass || null }
+            : { mode, hosts_text: hostsText, cname_text: cnameText,
+                zone_text: zoneText, zone_origin: zoneOrigin },
       }),
     onSuccess: (p) => {
       setPreview(p); setErr(null); setApplied(null);
@@ -114,14 +125,51 @@ function ImportPanel() {
       <div className="card">
         <div className="card-head"><h2>Source</h2></div>
         <div style={{ padding: 14, display: "grid", gap: 13 }}>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button className={`btn ${mode === "pihole" ? "primary" : ""}`}
-                    onClick={() => setMode("pihole")}>Pi-hole API</button>
+                    onClick={() => setMode("pihole")}>Pi-hole</button>
+            <button className={`btn ${mode === "technitium" ? "primary" : ""}`}
+                    onClick={() => setMode("technitium")}>Technitium</button>
             <button className={`btn ${mode === "text" ? "primary" : ""}`}
                     onClick={() => setMode("text")}>Paste files</button>
           </div>
 
-          {mode === "pihole" ? (
+          {mode === "technitium" ? (
+            <>
+              <label>
+                Technitium address
+                <input className="mono" value={tUrl} onChange={(e) => setTUrl(e.target.value)}
+                       placeholder="http://dns.example.internal:5380" />
+              </label>
+              <label>
+                API token
+                <input type="password" value={tToken}
+                       onChange={(e) => setTToken(e.target.value)}
+                       placeholder="Administration &gt; API Tokens" />
+              </label>
+              <div className="dim" style={{ fontSize: 12, marginTop: -6 }}>
+                Or leave the token empty and sign in instead:
+              </div>
+              <div className="row2">
+                <label>
+                  Username
+                  <input value={tUser} onChange={(e) => setTUser(e.target.value)}
+                         placeholder="admin" />
+                </label>
+                <label>
+                  Password
+                  <input type="password" value={tPass}
+                         onChange={(e) => setTPass(e.target.value)} />
+                </label>
+              </div>
+              <div className="dim" style={{ fontSize: 12 }}>
+                Every user-created zone is read. Technitium's built-in reverse and
+                localhost zones are skipped, as are disabled records and any type
+                UniFi cannot store. Credentials are used for this request only and
+                are never saved.
+              </div>
+            </>
+          ) : mode === "pihole" ? (
             <>
               <label>
                 Pi-hole address
@@ -157,12 +205,27 @@ function ImportPanel() {
               </label>
               <label>
                 <code>/etc/dnsmasq.d/05-pihole-custom-cname.conf</code>
-                <textarea rows={4} className="mono" value={cnameText}
+                <textarea rows={3} className="mono" value={cnameText}
                           onChange={(e) => setCnameText(e.target.value)}
                           placeholder="cname=git.example.internal,nas.example.internal" />
               </label>
+              <label>
+                Zone file (RFC 1035)
+                <textarea rows={7} className="mono" value={zoneText}
+                          onChange={(e) => setZoneText(e.target.value)}
+                          placeholder={"$ORIGIN example.internal.\n$TTL 3600\nnas   IN A     10.10.0.10\ngit   IN CNAME nas"} />
+              </label>
+              <label>
+                Origin, only if the zone file has no <code>$ORIGIN</code> line
+                <input className="mono" value={zoneOrigin}
+                       onChange={(e) => setZoneOrigin(e.target.value)}
+                       placeholder="example.internal" />
+              </label>
               <div className="dim" style={{ fontSize: 12 }}>
-                Works when the Pi-hole is already off, or its password is long gone.
+                The zone file box takes a Technitium export, a BIND or PowerDNS zone,
+                or anything else in the standard format. All three boxes are read
+                together, so paste whichever you have. This path works when the source
+                server is already switched off or its credentials are long gone.
               </div>
             </>
           )}

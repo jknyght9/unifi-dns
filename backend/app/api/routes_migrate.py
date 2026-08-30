@@ -21,8 +21,10 @@ from app.services import changes as svc
 from app.services.migrate import (
     ImportedRecord,
     fetch_pihole,
+    fetch_technitium,
     parse_cnames,
     parse_hosts,
+    parse_zone_file,
 )
 from app.unifi.client import UnifiClient
 from app.unifi.errors import UnifiError
@@ -38,14 +40,28 @@ class PiholeSource(BaseModel):
     verify_tls: bool = False
 
 
+class TechnitiumSource(BaseModel):
+    mode: Literal["technitium"] = "technitium"
+    url: str = Field(examples=["http://dns.example.internal:5380"])
+    token: str | None = Field(default=None, repr=False)
+    username: str | None = None
+    password: str | None = Field(default=None, repr=False)
+    verify_tls: bool = False
+
+
 class TextSource(BaseModel):
     mode: Literal["text"] = "text"
     hosts_text: str = ""
     cname_text: str = ""
+    #: RFC 1035 zone file. Covers a Technitium export, BIND, PowerDNS and most
+    #: other servers, and works when the source is already switched off.
+    zone_text: str = ""
+    #: Needed only when the zone file has no $ORIGIN and uses relative names.
+    zone_origin: str = ""
 
 
 class PreviewIn(BaseModel):
-    source: PiholeSource | TextSource
+    source: PiholeSource | TechnitiumSource | TextSource = Field(discriminator="mode")
     ttl: int = 300
 
 
@@ -57,19 +73,34 @@ class ApplyIn(BaseModel):
     overwrite_conflicts: bool = False
 
 
-async def _gather(src: PiholeSource | TextSource) -> tuple[list[ImportedRecord], list[dict], str]:
+async def _gather(
+    src: PiholeSource | TechnitiumSource | TextSource,
+) -> tuple[list[ImportedRecord], list[dict], str]:
     if isinstance(src, PiholeSource):
         try:
             res = await fetch_pihole(src.url, src.password, src.token, src.verify_tls)
         except Exception as exc:  # noqa: BLE001 - surface the reason verbatim
             raise HTTPException(502, f"could not read Pi-hole: {exc}") from exc
         return res.records, res.skipped, res.source
+
+    if isinstance(src, TechnitiumSource):
+        try:
+            res = await fetch_technitium(
+                src.url, src.token, src.username, src.password, src.verify_tls
+            )
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(502, f"could not read Technitium: {exc}") from exc
+        return res.records, res.skipped, res.source
+
     hosts = parse_hosts(src.hosts_text)
     cnames = parse_cnames(src.cname_text)
+    zone = parse_zone_file(src.zone_text, src.zone_origin)
+    used = [n for n, r in (("hosts", hosts), ("CNAME conf", cnames), ("zone file", zone))
+            if r.records or r.skipped]
     return (
-        [*hosts.records, *cnames.records],
-        [*hosts.skipped, *cnames.skipped],
-        "pasted text",
+        [*hosts.records, *cnames.records, *zone.records],
+        [*hosts.skipped, *cnames.skipped, *zone.skipped],
+        " + ".join(used) or "pasted text",
     )
 
 
@@ -87,7 +118,10 @@ async def preview(
         by_key.setdefault((r.fqdn.lower(), r.type), []).append(r.value)
     client_names = {r.fqdn.lower() for r in client_bound}
 
-    kind_to_type = {"A": "A_RECORD", "AAAA": "AAAA_RECORD", "CNAME": "CNAME_RECORD"}
+    kind_to_type = {
+        "A": "A_RECORD", "AAAA": "AAAA_RECORD", "CNAME": "CNAME_RECORD",
+        "MX": "MX_RECORD", "TXT": "TXT_RECORD", "SRV": "SRV_RECORD",
+    }
     new, duplicate, conflict, shadowed = [], [], [], []
     seen: set[tuple[str, str, str]] = set()
 

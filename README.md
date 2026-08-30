@@ -44,7 +44,7 @@ Verified against a UDM Pro running UniFi Network 10.6.101.
 
 <img src="docs/assets/screenshots/dns-settings.png" width="820" alt="Per-network DNS settings with warnings for public resolvers and mDNS-colliding search domains" />
 
-**Migrate** — import from an existing resolver, or move a zone to a new domain
+**Migrate** — import from Pi-hole, Technitium or a zone file, or move a zone to a new domain
 
 <img src="docs/assets/screenshots/migrate.png" width="820" alt="Migration page showing Pi-hole import and domain rename options" />
 
@@ -64,6 +64,9 @@ Verified against a UDM Pro running UniFi Network 10.6.101.
 - **Search, filter, sort** across every record.
 - **Full record support:** A, AAAA, CNAME, MX, TXT, SRV, including the parts the
   API is fussy about (see Gotchas).
+- **Migration in.** Pull records from Pi-hole or Technitium over their APIs, or
+  paste a zone file. The zone-file path speaks RFC 1035, so it also covers BIND,
+  PowerDNS and a source server that is already switched off.
 - **Changesets.** Every mutation is recorded with before/after JSON and an
   author. Nothing bypasses the audit log.
 - **Rollback with a plan.** Review the inverse operations before they touch the
