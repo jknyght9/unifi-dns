@@ -1,0 +1,259 @@
+/* UniFi-adjacent surface: neutral chrome, single blue accent, dense tables.
+   Tokens are defined light-first on :root, then overridden for dark, so the
+   app follows the OS without a toggle. */
+:root {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --surface-2: #f1f3f6;
+  --border: #dfe3e9;
+  --text: #1b1f26;
+  --text-dim: #666e7a;
+  --accent: #006fff;
+  --accent-dim: #e6f0ff;
+  --ok: #1a9d5a;
+  --warn: #b7791f;
+  --danger: #d13438;
+  --radius: 6px;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161a;
+    --surface: #1c1f24;
+    --surface-2: #23272e;
+    --border: #2e333b;
+    --text: #e6e9ee;
+    --text-dim: #949cab;
+    --accent: #3d8bff;
+    --accent-dim: #16294a;
+    --ok: #3fbd7d;
+    --warn: #d9a441;
+    --danger: #f2555a;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+/* Full-height shell. The previous grid let the sidebar grow to the height of
+   the tallest column, so a long page pushed the nav off screen and you had to
+   scroll back up to change pages. Header is fixed; sidebar and main scroll
+   independently. */
+.shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+.topbar {
+  flex: 0 0 auto; height: 48px; display: flex; align-items: center; gap: 16px;
+  padding: 0 16px; background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.topbar .brand { font-weight: 600; font-size: 14px; padding: 0; letter-spacing: -0.01em; }
+.topbar .brand span { color: var(--accent); }
+.topbar .divider { width: 1px; height: 22px; background: var(--border); }
+.topbar .meta { display: flex; align-items: center; gap: 7px; font-size: 12.5px; }
+.topbar .user {
+  display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-dim);
+}
+.avatar {
+  width: 24px; height: 24px; border-radius: 50%; background: var(--accent);
+  color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 600;
+}
+
+.body { flex: 1; display: flex; min-height: 0; }
+
+.sidebar {
+  flex: 0 0 auto; width: 196px; background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 10px 8px; display: flex; flex-direction: column; gap: 2px;
+  overflow-y: auto; transition: width 0.12s ease;
+}
+.sidebar.collapsed { width: 52px; padding: 10px 6px; }
+.navbtn {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  text-align: left; background: none; border: 0; color: var(--text-dim);
+  padding: 7px 9px; border-radius: var(--radius); cursor: pointer; font-size: 13px;
+  white-space: nowrap; overflow: hidden;
+}
+.navbtn:hover { background: var(--surface-2); color: var(--text); }
+.navbtn.active { background: var(--accent-dim); color: var(--accent); font-weight: 500; }
+.navbtn svg { flex: 0 0 16px; width: 16px; height: 16px; }
+.sidebar.collapsed .navbtn { justify-content: center; padding: 7px 0; }
+/* Small icon button in the top bar. It previously sat at the foot of the
+   sidebar as a full-width row, which read as a nav item and ate real estate. */
+.icon-btn {
+  flex: 0 0 auto; width: 26px; height: 26px; display: grid; place-items: center;
+  background: none; border: 0; border-radius: var(--radius);
+  color: var(--text-dim); cursor: pointer; padding: 0;
+}
+.icon-btn:hover { background: var(--surface-2); color: var(--text); }
+.icon-btn svg { width: 15px; height: 15px; }
+
+.main { flex: 1; min-width: 0; overflow-y: auto; padding: 22px 26px 60px; }
+
+h1 { font-size: 19px; margin: 0 0 2px; font-weight: 600; letter-spacing: -0.01em; }
+.sub { color: var(--text-dim); font-size: 13px; margin-bottom: 18px; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 14px; overflow: hidden;
+}
+.card-head {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  border-bottom: 1px solid var(--border); background: var(--surface-2);
+}
+.card-head h2 { font-size: 13px; margin: 0; font-weight: 600; font-family: var(--mono); }
+.pill {
+  font-size: 11px; padding: 1px 7px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text-dim);
+}
+.pill.warn { color: var(--warn); border-color: var(--warn); }
+
+table { width: 100%; border-collapse: collapse; }
+th {
+  text-align: left; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--text-dim); font-weight: 600;
+  padding: 8px 14px; border-bottom: 1px solid var(--border);
+}
+td { padding: 7px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--surface-2); }
+.mono { font-family: var(--mono); font-size: 12.5px; }
+.dim { color: var(--text-dim); }
+.tag {
+  font-family: var(--mono); font-size: 11px; padding: 1px 6px;
+  border-radius: 3px; background: var(--surface-2); border: 1px solid var(--border);
+}
+.disabled-row td:not(:last-child) { opacity: 0.45; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+.btn {
+  background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  padding: 5px 11px; border-radius: var(--radius); cursor: pointer; font-size: 13px;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { filter: brightness(1.08); color: #fff; }
+.btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.sm { padding: 3px 8px; font-size: 12px; white-space: nowrap; }
+
+input, select, textarea {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 6px 9px; width: 100%;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim);
+}
+.toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+.toolbar input[type="search"] { max-width: 300px; }
+.toolbar select { width: auto; }
+.spacer { flex: 1; }
+
+.modal-back {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+  display: grid; place-items: center; padding: 20px; z-index: 50;
+}
+.modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; width: min(560px, 100%); max-height: 90vh; overflow: auto;
+}
+.modal h3 { margin: 0; padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 15px; }
+.modal-body { padding: 18px; display: grid; gap: 13px; }
+.modal-foot {
+  padding: 12px 18px; border-top: 1px solid var(--border);
+  display: flex; gap: 8px; justify-content: flex-end;
+}
+label { display: grid; gap: 5px; font-size: 12px; color: var(--text-dim); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 13px; }
+
+.banner {
+  padding: 9px 13px; border-radius: var(--radius); margin-bottom: 14px; font-size: 13px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.banner.err { border-color: var(--danger); color: var(--danger); }
+.banner.ok { border-color: var(--ok); color: var(--ok); }
+.banner.warn { border-color: var(--warn); color: var(--warn); }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.status-dot.up { background: var(--ok); }
+.status-dot.down { background: var(--danger); }
+.empty { padding: 34px; text-align: center; color: var(--text-dim); font-size: 13px; }
+pre.diff {
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px; font-family: var(--mono); font-size: 11.5px; overflow-x: auto; margin: 0;
+}
+
+/* ------------------------------------------------------------- dashboard -- */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.tile {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 13px 15px;
+}
+.tile .label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-dim); font-weight: 600; margin-bottom: 6px;
+}
+.tile .value { font-size: 27px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.1; }
+.tile .value.accent { color: var(--accent); }
+.tile .value.danger { color: var(--danger); }
+.tile .value.ok { color: var(--ok); }
+.tile .foot { font-size: 11.5px; color: var(--text-dim); margin-top: 5px; }
+
+/* Horizontal bars. A proportion is read faster from a bar than from a number. */
+.bar-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+.bar-track { height: 5px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+.bar-fill.danger { background: var(--danger); }
+
+.spark { display: flex; align-items: flex-end; gap: 2px; height: 54px; padding: 0 2px; }
+.spark div { flex: 1; min-width: 2px; background: var(--surface-2); border-radius: 1px 1px 0 0; position: relative; }
+.spark div i { position: absolute; inset: auto 0 0 0; background: var(--danger); border-radius: 1px 1px 0 0; display: block; }
+
+/* Collapsible zone headers. The whole strip is the hit target, so the caret is
+   an affordance rather than the only place you can click. */
+.card-head.clickable { cursor: pointer; user-select: none; }
+.card-head.clickable:hover { background: var(--border); }
+.caret {
+  width: 12px; height: 12px; flex: 0 0 12px; color: var(--text-dim);
+  transition: transform 0.12s ease;
+}
+.caret.closed { transform: rotate(-90deg); }
+.bulkbar {
+  position: sticky; bottom: 0; z-index: 5; margin-top: 10px;
+  background: var(--surface); border: 1px solid var(--accent);
+  border-radius: var(--radius); padding: 9px 13px;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.14);
+}
+
+/* ------------------------------------------------------------ login gate -- */
+.gate {
+  min-height: 100vh; display: grid; place-items: center;
+  background: var(--bg); padding: 24px;
+}
+.gate-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 34px; width: min(430px, 100%); text-align: center;
+}
+.gate-card .mark { width: 54px; height: 54px; margin: 0 auto 18px; display: block; }
+.gate-card h1 { font-size: 21px; margin: 0 0 6px; }
+.gate-card p { color: var(--text-dim); font-size: 13.5px; margin: 0 0 20px; line-height: 1.55; }
+.gate-card .btn { width: 100%; padding: 9px; font-size: 14px; }
+.gate-note {
+  margin-top: 18px; font-size: 12px; color: var(--text-dim);
+  border-top: 1px solid var(--border); padding-top: 14px; text-align: left;
+}
+
+/* No-auth indicator. Deliberately muted rather than alarm-coloured: it states a
+   deployment fact the operator has usually already accepted, and shouting it on
+   every page turns into noise that gets ignored. */
+.open-access {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12.5px; color: var(--text-dim);
+  padding: 3px 9px; border: 1px dashed var(--border); border-radius: 20px;
+  cursor: help;
+}
+.open-access svg { width: 13px; height: 13px; flex: 0 0 13px; }
+.open-access:hover { border-color: var(--warn); color: var(--warn); }

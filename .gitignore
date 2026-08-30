@@ -1,0 +1,27 @@
+.env
+probe-out/
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+frontend/dist/
+
+# Documents describing the operator's own network, not the software.
+private/
+
+# Local artefacts that capture live network state.
+probe-out/
+*.local.md
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Local virtualenv and build output
+.venv/
+venv/
+frontend/dist/
+frontend/node_modules/
+
+# Screenshots are committed; the scratch profile used to take them is not
+.chrome-profile/

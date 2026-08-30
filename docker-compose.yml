@@ -1,0 +1,53 @@
+services:
+  db:
+    restart: unless-stopped
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: unifidns
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-unifidns}
+      POSTGRES_DB: unifidns
+    volumes:
+      # Postgres 18 images want a single mount at /var/lib/postgresql and place
+      # the cluster in a version-specific subdirectory, so that pg_upgrade
+      # --link can work without crossing a mount boundary.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unifidns -d unifidns"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+
+  backend:
+    restart: unless-stopped
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://unifidns:${POSTGRES_PASSWORD:-unifidns}@db:5432/unifidns
+      UNIFI_HOST: ${UNIFI_HOST:-https://192.168.1.1}
+      UNIFI_API_KEY: ${UNIFI_API_KEY:?UNIFI_API_KEY is required}
+      UNIFI_SITE: ${UNIFI_SITE:-default}
+      UNIFI_VERIFY_TLS: ${UNIFI_VERIFY_TLS:-false}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
+      OIDC_ISSUER: ${OIDC_ISSUER:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      OIDC_REDIRECT_URL: ${OIDC_REDIRECT_URL:-}
+      TRUSTED_USER_HEADER: ${TRUSTED_USER_HEADER:-}
+      CORS_ORIGINS: '["http://localhost:5173","http://localhost:8080"]'
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+
+  frontend:
+    restart: unless-stopped
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+
+volumes:
+  pgdata:

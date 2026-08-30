@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+httpx
+pydantic
+pydantic-settings
+sqlalchemy[asyncio]
+asyncpg
+alembic
+authlib
+itsdangerous
