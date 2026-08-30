@@ -25,3 +25,7 @@ frontend/node_modules/
 
 # Screenshots are committed; the scratch profile used to take them is not
 .chrome-profile/
+
+# macOS finder metadata
+.DS_Store
+**/.DS_Store
