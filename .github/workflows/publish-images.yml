@@ -1,0 +1,69 @@
+name: Publish images (GHCR)
+
+# Builds and pushes the backend (FastAPI) and frontend (nginx SPA) images to
+# GitHub Container Registry so they can be pulled by orchestrators that do not
+# build from source (e.g. HashiCorp Nomad).
+#
+# Images:
+#   ghcr.io/<owner>/unifi-dns-backend
+#   ghcr.io/<owner>/unifi-dns-frontend
+#
+# NOTE: GHCR packages are PRIVATE by default. To let an unauthenticated puller
+# (like Nomad's docker driver without registry creds) pull them, make each
+# package public after the first run:
+#   repo → Packages → unifi-dns-{backend,frontend} → Package settings →
+#   Change visibility → Public.
+# Otherwise configure the puller with a GHCR token (read:packages).
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [backend, frontend]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image metadata (tags/labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/unifi-dns-${{ matrix.component }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=short
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.component }}
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
