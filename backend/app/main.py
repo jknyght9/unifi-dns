@@ -66,10 +66,14 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
-
     oidc_ready = auth.configure(settings)
+    # AuthMiddleware reads scope["session"], which SessionMiddleware populates.
+    # Starlette runs the LAST-added middleware first (outermost), so
+    # SessionMiddleware must be added AFTER AuthMiddleware to run before it —
+    # otherwise the session is never loaded when AuthMiddleware checks it and
+    # every request looks unauthenticated (OIDC login loops back to sign-in).
     app.add_middleware(auth.AuthMiddleware, settings=settings, enforce=oidc_ready)
+    app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
     if not oidc_ready and not settings.trusted_user_header:
         log.warning(
             "no authentication configured; set OIDC_ISSUER or TRUSTED_USER_HEADER "
